@@ -1,6 +1,7 @@
 {
   "name": "live-recognition",
   "private": true,
+  "homepage": "https://uraharcik.github.io/live-recognition/",
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
