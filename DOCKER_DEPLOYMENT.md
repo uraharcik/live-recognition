@@ -164,6 +164,7 @@ Environment variables are **baked into the build** at build time. To change them
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000/api/v1` | `https://172.31.46.109:8000/api/v1` |
+| `VITE_API_KEY` | API key for authentication | (none) | `your-api-key-here` |
 
 ---
 

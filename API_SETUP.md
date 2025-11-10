@@ -25,18 +25,21 @@ ip addr show
 hostname -I
 ```
 
-### 2. Configure the Environment Variable
+### 2. Configure the Environment Variables
 
 1. Copy the example environment file:
    ```bash
    cp .env.example .env
    ```
 
-2. Edit `.env` and replace the IP address:
+2. Edit `.env` and configure both the API URL and API key:
    ```env
-   VITE_API_BASE_URL=http://192.168.1.100:8000/api/v1
+   VITE_API_BASE_URL=https://192.168.1.100:8000/api/v1
+   VITE_API_KEY=your-actual-api-key-here
    ```
-   Replace `192.168.1.100` with the actual IP address from step 1.
+   Replace:
+   - `192.168.1.100` with the actual IP address from step 1
+   - `your-actual-api-key-here` with the API key provided by your backend service
 
 ### 3. Make Sure Docker is Accessible
 

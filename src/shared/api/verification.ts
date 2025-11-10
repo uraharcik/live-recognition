@@ -1,4 +1,4 @@
-import type { ApiError, VerificationResponse } from "./types";
+import type { ApiError, VerificationResponse, BackendVerificationResponse } from "./types";
 
 const API_BASE_URL =
 	import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
@@ -64,12 +64,26 @@ export async function verifyImages(
 			} satisfies ApiError;
 		}
 
-		const data = await response.json();
+		const data = await response.json() as BackendVerificationResponse;
 
-		// Map API response to our format
+		// Parse the backend response
+		// Check if we have results with face matches
+		const hasResults = data.result && data.result.length > 0;
+		const firstResult = hasResults ? data.result[0] : null;
+		const hasFaceMatches = firstResult?.face_matches && firstResult.face_matches.length > 0;
+
+		// Determine if it's a match based on similarity threshold (e.g., > 0.7 = 70%)
+		const SIMILARITY_THRESHOLD = 0.7;
+		const isMatch = Boolean(hasFaceMatches && firstResult.face_matches[0].similarity >= SIMILARITY_THRESHOLD);
+
+		// Get the highest similarity as confidence (convert to percentage)
+		const confidence = hasFaceMatches
+			? Math.round(firstResult.face_matches[0].similarity * 100)
+			: 0;
+
 		return {
-			isMatch: data.isMatch ?? data.is_match ?? false,
-			confidence: data.confidence ?? 0,
+			isMatch,
+			confidence,
 		};
 	} catch (error) {
 		if ((error as ApiError).status) {
