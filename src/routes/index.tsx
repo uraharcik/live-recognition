@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { verifyImages } from "@/shared/api";
 import { AnimatedLoader } from "../components/animated-loader";
 import { PhotoUploader } from "../components/photo-uploader";
 import { ResultDisplay } from "../components/result-display";
 import { StepIndicator } from "../components/step-indicator";
-import { verifyImages } from "@/shared/api";
 export const Route = createFileRoute("/")({
 	component: App,
 });
@@ -40,7 +40,9 @@ export default function App() {
 		} catch (err) {
 			console.error("Verification error:", err);
 			setError(
-				err instanceof Error ? err.message : "Failed to verify images. Please try again.",
+				err instanceof Error
+					? err.message
+					: "Failed to verify images. Please try again.",
 			);
 			setCurrentStep(2);
 		}
@@ -71,7 +73,8 @@ export default function App() {
 	};
 
 	return (
-		<div className="h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+		// <div className="h-screen bg-gradient-to-br from-gray-950 via-orange-950 to-gray-950 relative overflow-hidden">
+		<div className="h-screen bg-white relative overflow-hidden">
 			<div className="relative z-10 min-h-screen flex flex-col max-w-md mx-auto">
 				{currentStep !== 3 && currentStep !== 4 && (
 					<StepIndicator currentStep={currentStep} totalSteps={2} />
@@ -100,8 +103,8 @@ export default function App() {
 									disabled={!photo1}
 									className={`w-full mt-6 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 ${
 										photo1
-											? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/30"
-											: "bg-gray-800 text-gray-500 cursor-not-allowed"
+											? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+											: "bg-gray-light text-gray cursor-not-allowed"
 									}`}
 									whileHover={photo1 ? { scale: 1.02 } : {}}
 									whileTap={photo1 ? { scale: 0.98 } : {}}
@@ -149,7 +152,7 @@ export default function App() {
 								<div className="flex gap-3 mt-6">
 									<motion.button
 										onClick={handleBackToStep1}
-										className="px-6 py-4 rounded-2xl bg-gray-800 text-white flex items-center gap-2"
+										className="px-6 py-4 rounded-2xl bg-black text-white flex items-center gap-2"
 										whileHover={{ scale: 1.02 }}
 										whileTap={{ scale: 0.98 }}
 									>
@@ -162,8 +165,8 @@ export default function App() {
 										disabled={!photo2}
 										className={`flex-1 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 ${
 											photo2
-												? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-purple-500/30"
-												: "bg-gray-800 text-gray-500 cursor-not-allowed"
+												? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+												: "bg-gray-light text-gray cursor-not-allowed"
 										}`}
 										whileHover={photo2 ? { scale: 1.02 } : {}}
 										whileTap={photo2 ? { scale: 0.98 } : {}}
@@ -215,7 +218,7 @@ export default function App() {
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ delay: 0.5 }}
-					className="text-center py-6 px-6 text-gray-500"
+					className="text-center py-6 px-6 text-gray"
 				>
 					<p>Powered by RPA Technology</p>
 				</motion.div>

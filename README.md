@@ -66,10 +66,11 @@ See [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md) for detailed instructions.
 
 ### Backend API
 
-Create a `.env` file with your backend URL:
+Create a `.env` file with your backend URL and API key:
 
 ```env
 VITE_API_BASE_URL=https://192.168.1.100:8000/api/v1
+VITE_API_KEY=your-api-key-here
 ```
 
 **Important:** Must use HTTPS because camera access requires secure context.

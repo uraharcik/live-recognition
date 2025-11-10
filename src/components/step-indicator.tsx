@@ -10,9 +10,9 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
 	return (
 		<div className="w-full p-4">
 			<div className="flex items-center justify-between relative">
-				<div className="absolute top-4 left-5 right-5 h-1 bg-white/10 rounded-full">
+				<div className="absolute top-4 left-5 right-5 h-1 bg-gray-light rounded-full">
 					<motion.div
-						className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"
+						className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full"
 						initial={{ width: "0%" }}
 						animate={{
 							width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
@@ -37,10 +37,10 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
 							<motion.div
 								className={`size-9 rounded-full flex items-center justify-center border-2 transition-all ${
 									isCompleted
-										? "bg-gradient-to-br from-cyan-400 to-purple-500 border-2 border-yellow-300"
+										? "bg-gradient-to-br from-orange-500 to-orange-600 border-orange-500"
 										: isCurrent
-											? "bg-slate-950 border-cyan-400 shadow-lg shadow-cyan-400/50"
-											: "bg-slate-900 border-white/20"
+											? "bg-orange-500 border-orange-600 shadow-lg shadow-orange-500/50"
+											: "bg-white border-gray"
 								}`}
 								animate={
 									isCurrent
@@ -66,8 +66,8 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
 									</motion.div>
 								) : (
 									<span
-										className={`${
-											isCurrent ? "text-cyan-400" : "text-gray-500"
+										className={`font-medium ${
+											isCurrent ? "text-white" : "text-gray"
 										}`}
 									>
 										{stepNumber}
@@ -76,12 +76,12 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
 							</motion.div>
 
 							<motion.p
-								className={`mt-2 ${
+								className={`mt-2 text-sm font-medium ${
 									isCurrent
-										? "text-cyan-400"
+										? "text-orange-500"
 										: isCompleted
-											? "text-purple-400"
-											: "text-gray-600"
+											? "text-orange-600"
+											: "text-gray"
 								}`}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}

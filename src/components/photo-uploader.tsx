@@ -1,4 +1,4 @@
-import { Camera, Image, Upload, X, SwitchCamera } from "lucide-react";
+import { Camera, Image, SwitchCamera, Upload, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
@@ -18,7 +18,9 @@ export function PhotoUploader({
 }: PhotoUploaderProps) {
 	const [isCameraOpen, setIsCameraOpen] = useState(false);
 	const [stream, setStream] = useState<MediaStream | null>(null);
-	const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+	const [facingMode, setFacingMode] = useState<"user" | "environment">(
+		"environment",
+	);
 	const videoRef = useRef<HTMLVideoElement>(null);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +45,10 @@ export function PhotoUploader({
 				});
 			} catch (err) {
 				// Fallback: try without facingMode constraint
-				console.log(`${mode} camera not available, trying default camera:`, err);
+				console.log(
+					`${mode} camera not available, trying default camera:`,
+					err,
+				);
 				mediaStream = await navigator.mediaDevices.getUserMedia({
 					video: true,
 					audio: false,
@@ -53,8 +58,11 @@ export function PhotoUploader({
 			return mediaStream;
 		} catch (error) {
 			console.error("Error accessing camera:", error);
-			const errorMessage = error instanceof Error ? error.message : "Unknown error";
-			throw new Error(`Unable to access camera: ${errorMessage}\n\nPlease check:\n- Camera permissions are granted\n- Camera is not in use by another app`);
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			throw new Error(
+				`Unable to access camera: ${errorMessage}\n\nPlease check:\n- Camera permissions are granted\n- Camera is not in use by another app`,
+			);
 		}
 	};
 
@@ -63,8 +71,8 @@ export function PhotoUploader({
 		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 			alert(
 				"Camera API not available.\n\n" +
-				"This usually means the site is not accessed via HTTPS.\n\n" +
-				"Please use the 'Upload from Gallery' button instead, which will allow you to take a photo using your device's camera app."
+					"This usually means the site is not accessed via HTTPS.\n\n" +
+					"Please use the 'Upload from Gallery' button instead, which will allow you to take a photo using your device's camera app.",
 			);
 			return;
 		}
@@ -162,7 +170,7 @@ export function PhotoUploader({
 			transition={{ duration: 0.3 }}
 			className="w-full h-full flex items-center"
 		>
-			<div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border-2 border-cyan-500/30 backdrop-blur-sm w-full">
+			<div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-2 border-orange-500/30 backdrop-blur-sm w-full">
 				{!photo ? (
 					isCameraOpen ? (
 						<motion.div
@@ -190,7 +198,7 @@ export function PhotoUploader({
 							<div className="absolute bottom-0 left-0 right-0 p-6 flex gap-3">
 								<motion.button
 									onClick={closeCamera}
-									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg"
+									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-gray-dark to-black text-white shadow-lg"
 									whileHover={{ scale: 1.02 }}
 									whileTap={{ scale: 0.98 }}
 								>
@@ -199,7 +207,7 @@ export function PhotoUploader({
 								</motion.button>
 								<motion.button
 									onClick={capturePhoto}
-									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg"
+									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
 									whileHover={{ scale: 1.02 }}
 									whileTap={{ scale: 0.98 }}
 								>
@@ -211,7 +219,7 @@ export function PhotoUploader({
 					) : (
 						<div className="min-h-[400px] flex flex-col items-center justify-center gap-6 p-8">
 							<motion.div
-								className="w-32 h-32 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center"
+								className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
 								animate={{
 									scale: [1, 1.05, 1],
 									rotate: [0, 5, -5, 0],
@@ -226,12 +234,12 @@ export function PhotoUploader({
 							</motion.div>
 
 							<div className="text-center">
-								<h3 className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
-									Upload Photo {photoIndex + 1}
+								<h3 className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent mb-2">
+									{photoIndex === 0 ? "Take Photo 1" : "Upload Photo 2"}
 								</h3>
 								<p className="text-gray-400">
 									{photoIndex === 0
-										? "Take or upload your first photo"
+										? "Use your camera to take the first photo"
 										: "Take or upload your second photo"}
 								</p>
 							</div>
@@ -239,7 +247,7 @@ export function PhotoUploader({
 							<div className="flex flex-col gap-3 w-full max-w-sm">
 								<motion.button
 									onClick={openCamera}
-									className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white cursor-pointer shadow-lg shadow-cyan-500/30"
+									className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white cursor-pointer shadow-lg shadow-orange-500/30"
 									whileHover={{ scale: 1.02 }}
 									whileTap={{ scale: 0.98 }}
 								>
@@ -247,23 +255,24 @@ export function PhotoUploader({
 									<span>Open Camera</span>
 								</motion.button>
 
-								<label className="w-full">
-									<input
-										type="file"
-										accept="image/*"
-										capture="environment"
-										onChange={handleFileChange}
-										className="hidden"
-									/>
-									<motion.div
-										className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-purple-600 text-white cursor-pointer shadow-lg shadow-purple-500/30"
-										whileHover={{ scale: 1.02 }}
-										whileTap={{ scale: 0.98 }}
-									>
-										<Upload className="w-5 h-5" />
-										<span>Take Photo / Upload</span>
-									</motion.div>
-								</label>
+								{photoIndex === 1 && (
+									<label className="w-full">
+										<input
+											type="file"
+											accept="image/*"
+											onChange={handleFileChange}
+											className="hidden"
+										/>
+										<motion.div
+											className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gray text-white cursor-pointer shadow-lg  transition-colors"
+											whileHover={{ scale: 1.02 }}
+											whileTap={{ scale: 0.98 }}
+										>
+											<Upload className="w-5 h-5" />
+											<span>Upload from Files</span>
+										</motion.div>
+									</label>
+								)}
 							</div>
 						</div>
 					)
@@ -282,7 +291,7 @@ export function PhotoUploader({
 						</div>
 						<motion.button
 							onClick={onPhotoRemove}
-							className="absolute top-4 right-4 w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg"
+							className="absolute top-4 right-4 w-12 h-12 rounded-full bg-gray-dark flex items-center justify-center text-white shadow-lg"
 							whileHover={{ scale: 1.1 }}
 							whileTap={{ scale: 0.9 }}
 						>

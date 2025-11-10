@@ -6,21 +6,21 @@ export function AnimatedLoader() {
 			<div className="relative w-24 h-24">
 				{/* Outer rotating ring */}
 				<motion.div
-					className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-cyan-400 border-r-purple-500"
+					className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-orange-400 border-r-orange-600"
 					animate={{ rotate: 360 }}
 					transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
 				/>
 
 				{/* Middle rotating ring */}
 				<motion.div
-					className="absolute inset-2 rounded-full border-[3px] border-transparent border-b-purple-400 border-l-cyan-500"
+					className="absolute inset-2 rounded-full border-[3px] border-transparent border-b-orange-500 border-l-orange-300"
 					animate={{ rotate: -360 }}
 					transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
 				/>
 
 				{/* Inner pulsing core */}
 				<motion.div
-					className="absolute inset-5 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500"
+					className="absolute inset-5 rounded-full bg-gradient-to-tr from-orange-400 to-orange-600"
 					animate={{
 						scale: [1, 1.2, 1],
 						opacity: [0.5, 1, 0.5],
@@ -45,7 +45,7 @@ export function AnimatedLoader() {
 				transition={{ delay: 0.2 }}
 			>
 				<motion.h3
-					className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent"
+					className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"
 					animate={{ opacity: [0.5, 1, 0.5] }}
 					transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
 				>

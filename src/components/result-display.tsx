@@ -26,21 +26,21 @@ export function ResultDisplay({
 				transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
 				className={`relative w-32 h-32 rounded-full flex items-center justify-center ${
 					isMatch
-						? "bg-gradient-to-br from-green-400 to-emerald-500"
-						: "bg-gradient-to-br from-red-400 to-pink-500"
+						? "bg-gradient-to-br from-brand-green to-orange-500"
+						: "bg-gradient-to-br from-orange-700 to-orange-500"
 				}`}
 			>
 				{/* Animated rings */}
 				<motion.div
 					className={`absolute inset-0 rounded-full border-4 ${
-						isMatch ? "border-green-300" : "border-red-300"
+						isMatch ? "border-brand-green" : "border-orange-600"
 					}`}
 					animate={{ scale: [1, 1.3, 1.3], opacity: [0.8, 0, 0] }}
 					transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
 				/>
 				<motion.div
 					className={`absolute inset-0 rounded-full border-4 ${
-						isMatch ? "border-green-300" : "border-red-300"
+						isMatch ? "border-brand-green" : "border-orange-600"
 					}`}
 					animate={{ scale: [1, 1.3, 1.3], opacity: [0.8, 0, 0] }}
 					transition={{
@@ -68,8 +68,8 @@ export function ResultDisplay({
 				<h2
 					className={`bg-gradient-to-r ${
 						isMatch
-							? "from-green-400 to-emerald-500"
-							: "from-red-400 to-pink-500"
+							? "from-brand-green to-brand-green"
+							: "from-orange-600 to-orange-700"
 					} bg-clip-text text-transparent mb-2`}
 				>
 					{isMatch ? "Match Found!" : "No Match"}
@@ -86,13 +86,13 @@ export function ResultDisplay({
 				transition={{ delay: 0.6 }}
 				className="w-full max-w-xs"
 			>
-				<div className="rounded-2xl bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 backdrop-blur-sm p-6">
+				<div className="rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/20 backdrop-blur-sm p-6">
 					<div className="flex items-center justify-between mb-3">
 						<span className="flex items-center gap-2 text-muted-foreground">
 							<Sparkles className="w-4 h-4" />
 							Confidence Score
 						</span>
-						<span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+						<span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
 							{confidence}%
 						</span>
 					</div>
@@ -102,8 +102,8 @@ export function ResultDisplay({
 						<motion.div
 							className={`h-full rounded-full ${
 								isMatch
-									? "bg-gradient-to-r from-green-400 to-emerald-500"
-									: "bg-gradient-to-r from-red-400 to-pink-500"
+									? "bg-gradient-to-r from-brand-green to-brand-green"
+									: "bg-gradient-to-r from-orange-600 to-orange-700"
 							}`}
 							initial={{ width: 0 }}
 							animate={{ width: `${confidence}%` }}
@@ -116,7 +116,7 @@ export function ResultDisplay({
 			{/* Reset Button */}
 			<motion.button
 				onClick={onReset}
-				className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white mt-4"
+				className="px-8 py-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white mt-4"
 				whileHover={{ scale: 1.05 }}
 				whileTap={{ scale: 0.95 }}
 				initial={{ opacity: 0 }}

@@ -7,8 +7,7 @@
 body {
   @apply m-0;
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -90,6 +89,38 @@ code {
 }
 
 @theme inline {
+  /* Orange Brand Typography (Helvetica) */
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+
+  /* Orange Brand Colors (Official Brand Guidelines) */
+  /* Primary Brand Orange - Pantone® 151 / CMYK 0/60/100/0 / RGB 255/121/0 */
+  --color-orange-50: #fff5eb;
+  --color-orange-100: #ffead6;
+  --color-orange-200: #ffd4ad;
+  --color-orange-300: #ffbf85;
+  --color-orange-400: #ffa95c;
+  --color-orange-500: #ff7900;  /* Brand Orange - Primary */
+  --color-orange-600: #f16e00;  /* Accessible Orange - WCAG compliant */
+  --color-orange-700: #cc5e00;
+  --color-orange-800: #994600;
+  --color-orange-900: #662f00;
+  --color-orange-950: #331800;
+
+  /* Orange Brand Grayscale (Official) */
+  --color-gray: #8f8f8f;         /* Grey (mid) - RGB 143/143/143 */
+  --color-gray-light: #d6d6d6;   /* Grey (light) - RGB 214/214/214 */
+  --color-gray-dark: #595959;    /* Grey (dark) - RGB 89/89/89 */
+
+  /* Orange Brand Accent Colors (Official) */
+  --color-brand-black: #000000;  /* Black - RGB 0/0/0 */
+  --color-brand-white: #ffffff;  /* White - RGB 255/255/255 */
+  --color-brand-blue: #4bb4e6;   /* Blue - Pantone® 298 */
+  --color-brand-green: #50be87;  /* Green - Pantone® 3255 */
+  --color-brand-pink: #ffb4e6;   /* Pink - Pantone® 2036 */
+  --color-brand-purple: #a885d8; /* Purple - Pantone® 2087 */
+  --color-brand-yellow: #ffd200; /* Yellow - Pantone® 114 */
+  /* Shadcn/UI Design System Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
