@@ -1,13 +1,84 @@
-Welcome to your new TanStack app! 
+Welcome to your new TanStack app!
+
+# Live Recognition - Face Verification App
+
+A real-time face verification application that uses AI to compare two photos and determine if they match. Features camera capture and file upload capabilities with HTTPS support for secure camera access.
+
+## Features
+
+- 📸 Live camera capture (front & rear)
+- 🖼️ File upload support
+- 🔐 HTTPS-enabled for secure camera access
+- 🐳 Docker support for easy deployment
+- ⚡ Fast verification via REST API
+- 🎨 Beautiful animated UI with Tailwind CSS
 
 # Getting Started
 
-To run this application:
+## Development Mode
+
+To run this application locally:
 
 ```bash
 npm install
-npm run start
+npm run dev
 ```
+
+The app will be available at `https://localhost:3000/live-recognition/`
+
+## Docker Deployment (Recommended)
+
+### Quick Start
+
+```bash
+# Run the automated deployment script
+./deploy.sh
+```
+
+This will:
+1. Check Docker is running
+2. Generate SSL certificates (required for camera access)
+3. Build the Docker image
+4. Start the container on port 443
+
+Access at: `https://localhost/live-recognition/`
+
+### Manual Docker Setup
+
+```bash
+# 1. Generate SSL certificates
+mkdir -p certs
+cd certs
+mkcert localhost 127.0.0.1 ::1
+cd ..
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your backend API URL
+
+# 3. Build and run
+docker-compose up -d
+```
+
+See [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md) for detailed instructions.
+
+## Configuration
+
+### Backend API
+
+Create a `.env` file with your backend URL:
+
+```env
+VITE_API_BASE_URL=https://192.168.1.100:8000/api/v1
+```
+
+**Important:** Must use HTTPS because camera access requires secure context.
+
+See [API_SETUP.md](./API_SETUP.md) for connecting to backend on another PC.
+
+### HTTPS Setup
+
+See [DOCKER_HTTPS_SETUP.md](./DOCKER_HTTPS_SETUP.md) for SSL certificate configuration.
 
 # Building For Production
 
@@ -16,6 +87,8 @@ To build this application for production:
 ```bash
 npm run build
 ```
+
+The output will be in the `dist/` directory.
 
 ## Testing
 

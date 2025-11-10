@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: live-recognition-frontend
+    ports:
+      - "443:443"
+    volumes:
+      # Mount SSL certificates
+      - ./certs:/etc/nginx/certs:ro
+      # Optional: mount nginx config for easy updates
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      # Build-time environment variables (if needed)
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

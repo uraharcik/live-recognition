@@ -6,6 +6,7 @@ import { AnimatedLoader } from "../components/animated-loader";
 import { PhotoUploader } from "../components/photo-uploader";
 import { ResultDisplay } from "../components/result-display";
 import { StepIndicator } from "../components/step-indicator";
+import { verifyImages } from "@/shared/api";
 export const Route = createFileRoute("/")({
 	component: App,
 });
@@ -20,22 +21,29 @@ export default function App() {
 		isMatch: boolean;
 		confidence: number;
 	} | null>(null);
+	const [error, setError] = useState<string | null>(null);
 
-	// Mock AI matching service
+	// Real AI matching service
 	const analyzePhotos = async () => {
+		if (!photo1 || !photo2) {
+			setError("Both photos are required");
+			return;
+		}
+
 		setCurrentStep(3);
+		setError(null);
 
-		// Simulate API call delay
-		await new Promise((resolve) => setTimeout(resolve, 3000));
-
-		// Mock result - random match result for demo
-		const isMatch = Math.random() > 0.5;
-		const confidence = isMatch
-			? Math.floor(Math.random() * 20 + 75) // 75-95% for match
-			: Math.floor(Math.random() * 30 + 20); // 20-50% for no match
-
-		setMatchResult({ isMatch, confidence });
-		setCurrentStep(4);
+		try {
+			const result = await verifyImages(photo1, photo2);
+			setMatchResult(result);
+			setCurrentStep(4);
+		} catch (err) {
+			console.error("Verification error:", err);
+			setError(
+				err instanceof Error ? err.message : "Failed to verify images. Please try again.",
+			);
+			setCurrentStep(2);
+		}
 	};
 
 	const handleReset = () => {
@@ -43,6 +51,7 @@ export default function App() {
 		setPhoto1(null);
 		setPhoto2(null);
 		setMatchResult(null);
+		setError(null);
 	};
 
 	const handleNextFromStep1 = () => {
@@ -126,6 +135,16 @@ export default function App() {
 									onPhotoSelect={setPhoto2}
 									onPhotoRemove={() => setPhoto2(null)}
 								/>
+
+								{error && (
+									<motion.div
+										initial={{ opacity: 0, y: -10 }}
+										animate={{ opacity: 1, y: 0 }}
+										className="mt-4 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm"
+									>
+										{error}
+									</motion.div>
+								)}
 
 								<div className="flex gap-3 mt-6">
 									<motion.button
