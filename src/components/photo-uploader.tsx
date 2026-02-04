@@ -1,6 +1,7 @@
 import { Camera, Image, SwitchCamera, Upload, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { LivenessDetector } from "@/features/liveness";
 import { ImageWithFallback } from "./image-with-fallback";
 
 interface PhotoUploaderProps {
@@ -162,6 +163,18 @@ export function PhotoUploader({
 		};
 	}, [stream]);
 
+	// For photoIndex === 1 (face capture), use liveness detection
+	const isFaceCapture = photoIndex === 1;
+
+	const handleLivenessSuccess = (capturedImage: string) => {
+		onPhotoSelect(capturedImage);
+		setIsCameraOpen(false);
+	};
+
+	const handleLivenessCancel = () => {
+		setIsCameraOpen(false);
+	};
+
 	return (
 		<motion.div
 			initial={{ opacity: 0, x: 20 }}
@@ -173,49 +186,56 @@ export function PhotoUploader({
 			<div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-2 border-orange-500/30 backdrop-blur-sm w-full">
 				{!photo ? (
 					isCameraOpen ? (
-						<motion.div
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							className="relative min-h-[400px]"
-						>
-							<div className="aspect-[3/4] max-h-[500px] bg-black rounded-3xl overflow-hidden">
-								{/** biome-ignore lint/a11y/useMediaCaption: <Not needed> */}
-								<video
-									ref={videoRef}
-									autoPlay
-									playsInline
-									className="w-full h-full object-cover"
-								/>
-							</div>
-							<motion.button
-								onClick={toggleCamera}
-								className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
-								whileHover={{ scale: 1.1 }}
-								whileTap={{ scale: 0.9 }}
+						isFaceCapture ? (
+							<LivenessDetector
+								onSuccess={handleLivenessSuccess}
+								onCancel={handleLivenessCancel}
+							/>
+						) : (
+							<motion.div
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								className="relative min-h-[400px]"
 							>
-								<SwitchCamera className="w-6 h-6" />
-							</motion.button>
-							<div className="absolute bottom-0 left-0 right-0 p-6 flex gap-3">
+								<div className="aspect-[3/4] max-h-[500px] bg-black rounded-3xl overflow-hidden">
+									{/** biome-ignore lint/a11y/useMediaCaption: <Not needed> */}
+									<video
+										ref={videoRef}
+										autoPlay
+										playsInline
+										className="w-full h-full object-cover"
+									/>
+								</div>
 								<motion.button
-									onClick={closeCamera}
-									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-gray-dark to-black text-white shadow-lg"
-									whileHover={{ scale: 1.02 }}
-									whileTap={{ scale: 0.98 }}
+									onClick={toggleCamera}
+									className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
+									whileHover={{ scale: 1.1 }}
+									whileTap={{ scale: 0.9 }}
 								>
-									<X className="w-5 h-5 inline mr-2" />
-									<span>Cancel</span>
+									<SwitchCamera className="w-6 h-6" />
 								</motion.button>
-								<motion.button
-									onClick={capturePhoto}
-									className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-									whileHover={{ scale: 1.02 }}
-									whileTap={{ scale: 0.98 }}
-								>
-									<Camera className="w-5 h-5 inline mr-2" />
-									<span>Capture</span>
-								</motion.button>
-							</div>
-						</motion.div>
+								<div className="absolute bottom-0 left-0 right-0 p-6 flex gap-3">
+									<motion.button
+										onClick={closeCamera}
+										className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-gray-dark to-black text-white shadow-lg"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										<X className="w-5 h-5 inline mr-2" />
+										<span>Cancel</span>
+									</motion.button>
+									<motion.button
+										onClick={capturePhoto}
+										className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										<Camera className="w-5 h-5 inline mr-2" />
+										<span>Capture</span>
+									</motion.button>
+								</div>
+							</motion.div>
+						)
 					) : (
 						<div className="min-h-[400px] flex flex-col items-center justify-center gap-6 p-8">
 							<motion.div
