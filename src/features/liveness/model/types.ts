@@ -2,10 +2,23 @@ export type LivenessStatus =
 	| "idle"
 	| "loading"
 	| "positioning"
-	| "detecting"
+	| "challenge"
 	| "success"
 	| "timeout"
 	| "error";
+
+export type ChallengeType =
+	| "blink"
+	| "turnLeft"
+	| "turnRight"
+	| "smile"
+	| "openMouth";
+
+export interface Challenge {
+	type: ChallengeType;
+	instruction: string;
+	completed: boolean;
+}
 
 export interface BlinkState {
 	isEyesClosed: boolean;
@@ -27,10 +40,14 @@ export interface LivenessConfig {
 	requiredBlinks: number;
 	timeoutDuration: number;
 	detectionInterval: number;
+	challengeCount: number;
 }
 
 export interface LivenessState {
 	status: LivenessStatus;
 	blinkCount: number;
 	errorMessage: string | null;
+	currentChallenge: Challenge | null;
+	completedChallenges: number;
+	totalChallenges: number;
 }

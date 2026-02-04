@@ -163,8 +163,9 @@ export function LivenessDetector({
 				/>
 				<LivenessOverlay
 					status={state.status}
-					blinkCount={state.blinkCount}
-					requiredBlinks={config.requiredBlinks}
+					currentChallenge={state.currentChallenge}
+					completedChallenges={state.completedChallenges}
+					totalChallenges={state.totalChallenges}
 				/>
 			</div>
 

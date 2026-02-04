@@ -6,4 +6,6 @@ export type {
 	LivenessConfig,
 	LivenessState,
 	LivenessStatus,
+	Challenge,
+	ChallengeType,
 } from "./model/types";

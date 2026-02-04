@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createInitialBlinkState, detectBlink } from "../lib/blink-detector";
+import {
+	checkChallengeCompletion,
+	createInitialChallengeState,
+	extractBlendshapeScores,
+	extractHeadPose,
+	generateChallenges,
+	type ChallengeState,
+} from "../lib/challenge-detector";
 import { DEFAULT_LIVENESS_CONFIG } from "../lib/constants";
 import { loadFaceLandmarker } from "./face-api-loader";
-import type { BlinkState, LivenessConfig, LivenessState } from "./types";
+import type { Challenge, LivenessConfig, LivenessState } from "./types";
 
 interface UseLivenessStateOptions {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -21,9 +28,14 @@ export function useLivenessState({
 		status: "idle",
 		blinkCount: 0,
 		errorMessage: null,
+		currentChallenge: null,
+		completedChallenges: 0,
+		totalChallenges: config.challengeCount,
 	});
 
-	const blinkStateRef = useRef<BlinkState>(createInitialBlinkState());
+	const challengesRef = useRef<Challenge[]>([]);
+	const currentChallengeIndexRef = useRef(0);
+	const challengeStateRef = useRef<ChallengeState>(createInitialChallengeState());
 	const detectionIntervalRef = useRef<number | null>(null);
 	const timeoutRef = useRef<number | null>(null);
 	const isDetectingRef = useRef(false);
@@ -56,16 +68,47 @@ export function useLivenessState({
 		isDetectingRef.current = false;
 	}, []);
 
+	const advanceToNextChallenge = useCallback(() => {
+		currentChallengeIndexRef.current += 1;
+		challengeStateRef.current = createInitialChallengeState();
+
+		if (currentChallengeIndexRef.current >= challengesRef.current.length) {
+			// All challenges completed!
+			stopDetection();
+			setState((prev) => ({
+				...prev,
+				status: "success",
+				currentChallenge: null,
+				completedChallenges: challengesRef.current.length,
+			}));
+
+			// Wait for user to return to neutral expression before capturing
+			setTimeout(() => {
+				const image = captureImage();
+				if (image) {
+					onSuccess(image);
+				}
+			}, 1000);
+		} else {
+			// Move to next challenge
+			const nextChallenge = challengesRef.current[currentChallengeIndexRef.current];
+			setState((prev) => ({
+				...prev,
+				currentChallenge: nextChallenge,
+				completedChallenges: currentChallengeIndexRef.current,
+			}));
+		}
+	}, [stopDetection, captureImage, onSuccess]);
+
 	const runDetectionLoop = useCallback(async () => {
 		const video = videoRef.current;
 		if (!video || !isDetectingRef.current) return;
 
-		const faceLandmarker = (await loadFaceLandmarker());
+		const faceLandmarker = await loadFaceLandmarker();
 		if (!faceLandmarker) return;
 
 		try {
 			const timestamp = performance.now();
-			// Ensure timestamp is always increasing
 			if (timestamp <= lastTimestampRef.current) {
 				return;
 			}
@@ -81,100 +124,95 @@ export function useLivenessState({
 				return;
 			}
 
-			// Face detected, switch to detecting mode
+			// Face detected
+			const currentChallenge = challengesRef.current[currentChallengeIndexRef.current];
+
+			if (!currentChallenge) {
+				return;
+			}
+
+			// Update status to challenge if we were positioning
 			setState((prev) => {
 				if (prev.status === "positioning") {
-					return { ...prev, status: "detecting" };
+					return { ...prev, status: "challenge", currentChallenge };
 				}
 				return prev;
 			});
 
-			// Debug: log full face mesh result
-			console.log("Face Mesh Result:", {
-				faceLandmarks: result.faceLandmarks?.[0]?.length,
-				faceBlendshapes: result.faceBlendshapes?.[0]?.categories?.map(c => ({
-					name: c.categoryName,
-					score: c.score.toFixed(3)
-				})),
-				facialTransformationMatrixes: result.facialTransformationMatrixes?.[0]
-			});
-
-			// Get blink values from blendshapes
+			// Get blendshapes and head pose
 			const blendshapes = result.faceBlendshapes?.[0]?.categories;
 			if (!blendshapes) {
-				console.log("No blendshapes found");
 				return;
 			}
 
-			// Find eyeBlinkLeft and eyeBlinkRight
-			const eyeBlinkLeft = blendshapes.find(b => b.categoryName === "eyeBlinkLeft")?.score ?? 0;
-			const eyeBlinkRight = blendshapes.find(b => b.categoryName === "eyeBlinkRight")?.score ?? 0;
-			const averageBlink = (eyeBlinkLeft + eyeBlinkRight) / 2;
+			const scores = extractBlendshapeScores(blendshapes);
+			const landmarks = result.faceLandmarks[0];
+			const headPose = extractHeadPose(landmarks);
 
-			// Debug: log blink values
+			// Debug logging
 			console.log(
-				"Blink L:", eyeBlinkLeft.toFixed(3),
-				"| R:", eyeBlinkRight.toFixed(3),
-				"| Avg:", averageBlink.toFixed(3),
-				"| Closed:", blinkStateRef.current.isEyesClosed
+				`Challenge: ${currentChallenge.type}`,
+				`| Blink: ${((scores.eyeBlinkLeft + scores.eyeBlinkRight) / 2).toFixed(2)}`,
+				`| Smile: ${((scores.mouthSmileLeft + scores.mouthSmileRight) / 2).toFixed(2)}`,
+				`| Jaw: ${scores.jawOpen.toFixed(2)}`,
+				`| Yaw: ${headPose.yaw.toFixed(2)}`
 			);
 
-			// Use blink score as inverse EAR (higher = more closed)
-			const { newState, blinkDetected } = detectBlink(
-				averageBlink,
-				blinkStateRef.current,
-				config
+			// Check if current challenge is completed
+			const { completed, newState } = checkChallengeCompletion(
+				currentChallenge.type,
+				scores,
+				headPose,
+				challengeStateRef.current
 			);
 
-			blinkStateRef.current = newState;
+			challengeStateRef.current = newState;
 
-			if (blinkDetected) {
-				console.log("Blink detected! Count:", newState.blinkCount);
-				setState((prev) => ({
-					...prev,
-					blinkCount: newState.blinkCount,
-				}));
-
-				// Check if we have enough blinks
-				if (newState.blinkCount >= config.requiredBlinks) {
-					stopDetection();
-					setState((prev) => ({ ...prev, status: "success" }));
-
-					const image = captureImage();
-					if (image) {
-						onSuccess(image);
-					}
-				}
+			if (completed) {
+				console.log(`Challenge completed: ${currentChallenge.type}`);
+				advanceToNextChallenge();
 			}
 		} catch (error) {
 			console.error("Detection error:", error);
 		}
-	}, [videoRef, config, stopDetection, captureImage, onSuccess]);
+	}, [videoRef, advanceToNextChallenge]);
 
 	const startDetection = useCallback(async () => {
+		// Generate random challenges
+		const challenges = generateChallenges(config.challengeCount);
+		challengesRef.current = challenges;
+		currentChallengeIndexRef.current = 0;
+		challengeStateRef.current = createInitialChallengeState();
+		lastTimestampRef.current = 0;
+
 		setState({
 			status: "loading",
 			blinkCount: 0,
 			errorMessage: null,
+			currentChallenge: null,
+			completedChallenges: 0,
+			totalChallenges: challenges.length,
 		});
-		blinkStateRef.current = createInitialBlinkState();
-		lastTimestampRef.current = 0;
 
 		try {
 			await loadFaceLandmarker();
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : "Failed to load models";
-			setState({
+			setState((prev) => ({
+				...prev,
 				status: "error",
-				blinkCount: 0,
 				errorMessage: message,
-			});
+			}));
 			return;
 		}
 
 		// Start detection
-		setState((prev) => ({ ...prev, status: "positioning" }));
+		setState((prev) => ({
+			...prev,
+			status: "positioning",
+			currentChallenge: challenges[0],
+		}));
 		isDetectingRef.current = true;
 
 		// Set up detection loop
@@ -188,18 +226,23 @@ export function useLivenessState({
 			stopDetection();
 			setState((prev) => ({ ...prev, status: "timeout" }));
 		}, config.timeoutDuration);
-	}, [config.detectionInterval, config.timeoutDuration, runDetectionLoop, stopDetection]);
+	}, [config.challengeCount, config.detectionInterval, config.timeoutDuration, runDetectionLoop, stopDetection]);
 
 	const reset = useCallback(() => {
 		stopDetection();
-		blinkStateRef.current = createInitialBlinkState();
+		challengesRef.current = [];
+		currentChallengeIndexRef.current = 0;
+		challengeStateRef.current = createInitialChallengeState();
 		lastTimestampRef.current = 0;
 		setState({
 			status: "idle",
 			blinkCount: 0,
 			errorMessage: null,
+			currentChallenge: null,
+			completedChallenges: 0,
+			totalChallenges: config.challengeCount,
 		});
-	}, [stopDetection]);
+	}, [stopDetection, config.challengeCount]);
 
 	// Cleanup on unmount
 	useEffect(() => {
