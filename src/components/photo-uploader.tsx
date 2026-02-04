@@ -255,12 +255,12 @@ export function PhotoUploader({
 
 							<div className="text-center">
 								<h3 className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent mb-2">
-									{photoIndex === 0 ? "Take Photo 1" : "Upload Photo 2"}
+									{photoIndex === 0 ? "Document Photo" : "Face Verification"}
 								</h3>
 								<p className="text-gray-400">
 									{photoIndex === 0
-										? "Use your camera to take the first photo"
-										: "Take or upload your second photo"}
+										? "Take or upload a photo of your document"
+										: "Use your camera for face verification"}
 								</p>
 							</div>
 
@@ -275,7 +275,7 @@ export function PhotoUploader({
 									<span>Open Camera</span>
 								</motion.button>
 
-								{photoIndex === 1 && (
+								{photoIndex === 0 && (
 									<label className="w-full">
 										<input
 											type="file"
