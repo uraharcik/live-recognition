@@ -12,7 +12,16 @@ export type ChallengeType =
 	| "turnLeft"
 	| "turnRight"
 	| "smile"
-	| "openMouth";
+	| "openMouth"
+	| "raiseEyebrows"
+	| "squint"
+	| "puffCheeks"
+	| "lookUp"
+	| "lookDown"
+	| "winkLeft"
+	| "winkRight"
+	| "purseLips"
+	| "frown";
 
 export interface Challenge {
 	type: ChallengeType;

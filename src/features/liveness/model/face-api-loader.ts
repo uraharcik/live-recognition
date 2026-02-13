@@ -19,19 +19,20 @@ export async function loadFaceLandmarker(): Promise<FaceLandmarker> {
 
 	loadingPromise = (async () => {
 		try {
+			const base = import.meta.env.BASE_URL;
 			const vision = await FilesetResolver.forVisionTasks(
-				"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+				`${base}mediapipe/wasm`
 			);
 
 			const landmarker = await FaceLandmarker.createFromOptions(vision, {
 				baseOptions: {
-					modelAssetPath:
-						"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+					modelAssetPath: `${base}mediapipe/face_landmarker.task`,
 					delegate: "GPU",
 				},
 				runningMode: "VIDEO",
 				numFaces: 1,
 				outputFaceBlendshapes: true,
+				outputFacialTransformationMatrixes: true,
 			});
 
 			faceLandmarker = landmarker;

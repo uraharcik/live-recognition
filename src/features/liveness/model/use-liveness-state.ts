@@ -149,6 +149,11 @@ export function useLivenessState({
 			const landmarks = result.faceLandmarks[0];
 			const headPose = extractHeadPose(landmarks);
 
+			// Full 3D face mesh logging
+			console.log("Face Mesh - All 478 landmarks:", landmarks);
+			console.log("Face Mesh - Facial transformation matrices:", result.facialTransformationMatrixes);
+			console.log("Face Mesh - Blendshapes:", result.faceBlendshapes?.[0]?.categories);
+
 			// Debug logging
 			console.log(
 				`Challenge: ${currentChallenge.type}`,
