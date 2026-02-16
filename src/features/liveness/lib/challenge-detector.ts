@@ -11,7 +11,6 @@ interface BlendshapeScores {
 	browOuterUpRight: number;
 	eyeSquintLeft: number;
 	eyeSquintRight: number;
-	cheekPuff: number;
 	eyeLookUpLeft: number;
 	eyeLookUpRight: number;
 	eyeLookDownLeft: number;
@@ -36,7 +35,6 @@ const CHALLENGE_DEFINITIONS: Record<ChallengeType, { instruction: string }> = {
 	openMouth: { instruction: "Open your mouth" },
 	raiseEyebrows: { instruction: "Raise your eyebrows" },
 	squint: { instruction: "Squint your eyes" },
-	puffCheeks: { instruction: "Puff your cheeks" },
 	lookUp: { instruction: "Look up" },
 	lookDown: { instruction: "Look down" },
 	winkLeft: { instruction: "Wink your left eye" },
@@ -52,10 +50,10 @@ const THRESHOLDS = {
 	headTurn: 0.15,
 	browRaise: 0.35,
 	squint: 0.4,
-	cheekPuff: 0.3,
 	eyeLook: 0.4,
-	wink: 0.5,
-	winkOpenEye: 0.3,
+	wink: 0.4,
+	winkOpenEye: 0.35,
+	winkHoldMs: 200,
 	purseLips: 0.4,
 	frown: 0.3,
 };
@@ -66,7 +64,7 @@ const THRESHOLDS = {
 export function generateChallenges(count: number): Challenge[] {
 	const allTypes: ChallengeType[] = [
 		"blink", "turnLeft", "turnRight", "smile", "openMouth",
-		"raiseEyebrows", "squint", "puffCheeks", "lookUp",
+		"raiseEyebrows", "squint", "lookUp",
 		"lookDown", "winkLeft", "winkRight", "purseLips", "frown",
 	];
 	const challenges: Challenge[] = [];
@@ -193,13 +191,6 @@ export function checkChallengeCompletion(
 			return { completed: false, newState };
 		}
 
-		case "puffCheeks": {
-			if (blendshapes.cheekPuff > THRESHOLDS.cheekPuff) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
-		}
-
 		case "lookUp": {
 			const avgLookUp = (blendshapes.eyeLookUpLeft + blendshapes.eyeLookUpRight) / 2;
 			if (avgLookUp > THRESHOLDS.eyeLook) {
@@ -217,17 +208,51 @@ export function checkChallengeCompletion(
 		}
 
 		case "winkLeft": {
-			// Left eye closed, right eye open
-			if (blendshapes.eyeBlinkLeft > THRESHOLDS.wink && blendshapes.eyeBlinkRight < THRESHOLDS.winkOpenEye) {
-				return { completed: true, newState };
+			const leftClosed = blendshapes.eyeBlinkLeft > THRESHOLDS.wink;
+			const rightOpen = blendshapes.eyeBlinkRight < THRESHOLDS.winkOpenEye;
+			// Reject if both eyes are closing (natural blink)
+			const bothClosing = blendshapes.eyeBlinkLeft > THRESHOLDS.wink && blendshapes.eyeBlinkRight > THRESHOLDS.winkOpenEye;
+
+			if (leftClosed && rightOpen && !bothClosing) {
+				if (newState.winkingSide !== "left") {
+					newState.winkingSide = "left";
+					newState.winkStartTime = Date.now();
+				} else {
+					const held = Date.now() - (newState.winkStartTime ?? 0);
+					if (held >= THRESHOLDS.winkHoldMs) {
+						newState.winkingSide = null;
+						newState.winkStartTime = null;
+						return { completed: true, newState };
+					}
+				}
+			} else {
+				newState.winkingSide = null;
+				newState.winkStartTime = null;
 			}
 			return { completed: false, newState };
 		}
 
 		case "winkRight": {
-			// Right eye closed, left eye open
-			if (blendshapes.eyeBlinkRight > THRESHOLDS.wink && blendshapes.eyeBlinkLeft < THRESHOLDS.winkOpenEye) {
-				return { completed: true, newState };
+			const rightClosed = blendshapes.eyeBlinkRight > THRESHOLDS.wink;
+			const leftOpen = blendshapes.eyeBlinkLeft < THRESHOLDS.winkOpenEye;
+			// Reject if both eyes are closing (natural blink)
+			const bothClosing = blendshapes.eyeBlinkRight > THRESHOLDS.wink && blendshapes.eyeBlinkLeft > THRESHOLDS.winkOpenEye;
+
+			if (rightClosed && leftOpen && !bothClosing) {
+				if (newState.winkingSide !== "right") {
+					newState.winkingSide = "right";
+					newState.winkStartTime = Date.now();
+				} else {
+					const held = Date.now() - (newState.winkStartTime ?? 0);
+					if (held >= THRESHOLDS.winkHoldMs) {
+						newState.winkingSide = null;
+						newState.winkStartTime = null;
+						return { completed: true, newState };
+					}
+				}
+			} else {
+				newState.winkingSide = null;
+				newState.winkStartTime = null;
 			}
 			return { completed: false, newState };
 		}
@@ -259,6 +284,8 @@ export interface ChallengeState {
 	eyesClosedTime: number | null;
 	turnedLeft: boolean;
 	turnedRight: boolean;
+	winkingSide: "left" | "right" | null;
+	winkStartTime: number | null;
 }
 
 export function createInitialChallengeState(): ChallengeState {
@@ -267,6 +294,8 @@ export function createInitialChallengeState(): ChallengeState {
 		eyesClosedTime: null,
 		turnedLeft: false,
 		turnedRight: false,
+		winkingSide: null,
+		winkStartTime: null,
 	};
 }
 
@@ -290,7 +319,6 @@ export function extractBlendshapeScores(
 		browOuterUpRight: findScore("browOuterUpRight"),
 		eyeSquintLeft: findScore("eyeSquintLeft"),
 		eyeSquintRight: findScore("eyeSquintRight"),
-		cheekPuff: findScore("cheekPuff"),
 		eyeLookUpLeft: findScore("eyeLookUpLeft"),
 		eyeLookUpRight: findScore("eyeLookUpRight"),
 		eyeLookDownLeft: findScore("eyeLookDownLeft"),

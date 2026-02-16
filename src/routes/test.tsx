@@ -22,7 +22,6 @@ const ALL_CHALLENGES: ChallengeType[] = [
 	"openMouth",
 	"raiseEyebrows",
 	"squint",
-	"puffCheeks",
 	"lookUp",
 	"lookDown",
 	"winkLeft",
@@ -39,7 +38,6 @@ const CHALLENGE_LABELS: Record<ChallengeType, string> = {
 	openMouth: "Open Mouth",
 	raiseEyebrows: "Raise Eyebrows",
 	squint: "Squint",
-	puffCheeks: "Puff Cheeks",
 	lookUp: "Look Up",
 	lookDown: "Look Down",
 	winkLeft: "Wink Left",
@@ -59,7 +57,6 @@ interface BlendshapeData {
 	browOuterUpRight: number;
 	eyeSquintLeft: number;
 	eyeSquintRight: number;
-	cheekPuff: number;
 	eyeLookUpLeft: number;
 	eyeLookUpRight: number;
 	eyeLookDownLeft: number;
@@ -83,7 +80,6 @@ const THRESHOLDS: Record<string, number> = {
 	headTurn: 0.15,
 	browRaise: 0.35,
 	squint: 0.4,
-	cheekPuff: 0.3,
 	eyeLook: 0.4,
 	wink: 0.5,
 	winkOpenEye: 0.3,
@@ -167,10 +163,6 @@ function getRelevantMetrics(
 					threshold: THRESHOLDS.blink,
 					inverted: true,
 				},
-			];
-		case "puffCheeks":
-			return [
-				{ label: "Cheek Puff", value: scores.cheekPuff, threshold: THRESHOLDS.cheekPuff },
 			];
 		case "lookUp":
 			return [
@@ -319,6 +311,7 @@ function ChallengeTestPage() {
 		Array<{ challenge: ChallengeType; time: string; success: boolean }>
 	>([]);
 	const [faceDetected, setFaceDetected] = useState(false);
+	const [rawCategories, setRawCategories] = useState<Array<{ categoryName: string; score: number }>>([]);
 
 	const intervalRef = useRef<number | null>(null);
 	const lastTimestampRef = useRef(0);
@@ -367,6 +360,7 @@ function ChallengeTestPage() {
 
 		setScores(extracted);
 		setHeadPose(pose);
+		setRawCategories([...blendshapes].sort((a, b) => a.categoryName.localeCompare(b.categoryName)));
 
 		const { completed, newState } = checkChallengeCompletion(
 			selectedChallenge,
@@ -710,41 +704,39 @@ function ChallengeTestPage() {
 						</div>
 					</div>
 
-					{/* Right: All blendshapes raw view */}
+					{/* Right: All raw MediaPipe blendshapes */}
 					<div className="lg:col-span-1">
 						<div className="bg-gray-900 rounded-xl p-3">
 							<h3 className="text-sm font-medium text-gray-400 mb-2">
-								All Blendshape Scores
+								Raw MediaPipe Blendshapes ({rawCategories.length})
 							</h3>
-							{scores ? (
+							{rawCategories.length > 0 ? (
 								<div className="space-y-1.5 max-h-[calc(100vh-120px)] overflow-y-auto">
-									{(
-										Object.entries(scores) as Array<
-											[keyof BlendshapeData, number]
-										>
-									).map(([key, value]) => (
-										<div key={key}>
+									{rawCategories.map((cat) => (
+										<div key={cat.categoryName}>
 											<div className="flex justify-between text-[10px] mb-0.5">
-												<span className="text-gray-500">{key}</span>
+												<span className={cat.categoryName.toLowerCase().includes("cheek") ? "text-yellow-400 font-bold" : "text-gray-500"}>
+													{cat.categoryName}
+												</span>
 												<span
 													className={
-														value > 0.3
+														cat.score > 0.3
 															? "text-orange-400"
 															: "text-gray-600"
 													}
 												>
-													{value.toFixed(3)}
+													{cat.score.toFixed(4)}
 												</span>
 											</div>
 											<div className="relative h-2 bg-gray-800 rounded overflow-hidden">
 												<div
 													className={`absolute inset-y-0 left-0 rounded transition-all duration-75 ${
-														value > 0.3
+														cat.score > 0.3
 															? "bg-orange-500/70"
 															: "bg-gray-600"
 													}`}
 													style={{
-														width: `${Math.min(value * 100, 100)}%`,
+														width: `${Math.min(cat.score * 100, 100)}%`,
 													}}
 												/>
 											</div>

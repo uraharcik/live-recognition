@@ -15,7 +15,6 @@ export type ChallengeType =
 	| "openMouth"
 	| "raiseEyebrows"
 	| "squint"
-	| "puffCheeks"
 	| "lookUp"
 	| "lookDown"
 	| "winkLeft"
