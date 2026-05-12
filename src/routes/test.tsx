@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+	CHALLENGE_DEFINITIONS,
+	THRESHOLDS,
 	checkChallengeCompletion,
 	createInitialChallengeState,
 	extractBlendshapeScores,
 	extractHeadPose,
+	type BlendshapeScores,
 	type ChallengeState,
+	type HeadPose,
 } from "@/features/liveness/lib/challenge-detector";
 import { loadFaceLandmarker } from "@/features/liveness/model/face-api-loader";
 import type { ChallengeType } from "@/features/liveness/model/types";
@@ -14,83 +18,12 @@ export const Route = createFileRoute("/test")({
 	component: ChallengeTestPage,
 });
 
-const ALL_CHALLENGES: ChallengeType[] = [
-	"blink",
-	"turnLeft",
-	"turnRight",
-	"smile",
-	"openMouth",
-	"raiseEyebrows",
-	"squint",
-	"lookUp",
-	"lookDown",
-	"winkLeft",
-	"winkRight",
-	"purseLips",
-	"frown",
-];
-
-const CHALLENGE_LABELS: Record<ChallengeType, string> = {
-	blink: "Blink",
-	turnLeft: "Turn Left",
-	turnRight: "Turn Right",
-	smile: "Smile",
-	openMouth: "Open Mouth",
-	raiseEyebrows: "Raise Eyebrows",
-	squint: "Squint",
-	lookUp: "Look Up",
-	lookDown: "Look Down",
-	winkLeft: "Wink Left",
-	winkRight: "Wink Right",
-	purseLips: "Purse Lips",
-	frown: "Frown",
-};
-
-interface BlendshapeData {
-	eyeBlinkLeft: number;
-	eyeBlinkRight: number;
-	mouthSmileLeft: number;
-	mouthSmileRight: number;
-	jawOpen: number;
-	browInnerUp: number;
-	browOuterUpLeft: number;
-	browOuterUpRight: number;
-	eyeSquintLeft: number;
-	eyeSquintRight: number;
-	eyeLookUpLeft: number;
-	eyeLookUpRight: number;
-	eyeLookDownLeft: number;
-	eyeLookDownRight: number;
-	mouthPucker: number;
-	mouthFrownLeft: number;
-	mouthFrownRight: number;
-	browDownLeft: number;
-	browDownRight: number;
-}
-
-interface HeadPoseData {
-	yaw: number;
-	pitch: number;
-}
-
-const THRESHOLDS: Record<string, number> = {
-	blink: 0.5,
-	smile: 0.4,
-	jawOpen: 0.3,
-	headTurn: 0.15,
-	browRaise: 0.35,
-	squint: 0.4,
-	eyeLook: 0.4,
-	wink: 0.5,
-	winkOpenEye: 0.3,
-	purseLips: 0.4,
-	frown: 0.3,
-};
+const ALL_CHALLENGES = Object.keys(CHALLENGE_DEFINITIONS) satisfies ChallengeType[];
 
 function getRelevantMetrics(
 	challenge: ChallengeType,
-	scores: BlendshapeData,
-	headPose: HeadPoseData,
+	scores: BlendshapeScores,
+	headPose: HeadPose,
 ): Array<{ label: string; value: number; threshold: number; inverted?: boolean }> {
 	switch (challenge) {
 		case "blink":
@@ -167,34 +100,15 @@ function getRelevantMetrics(
 		case "lookUp":
 			return [
 				{
-					label: "Avg Look Up",
-					value: (scores.eyeLookUpLeft + scores.eyeLookUpRight) / 2,
-					threshold: THRESHOLDS.eyeLook,
-				},
-				{ label: "L Look Up", value: scores.eyeLookUpLeft, threshold: THRESHOLDS.eyeLook },
-				{
-					label: "R Look Up",
-					value: scores.eyeLookUpRight,
-					threshold: THRESHOLDS.eyeLook,
+					label: "Head Pitch",
+					value: headPose.pitch,
+					threshold: -THRESHOLDS.headTilt,
+					inverted: true,
 				},
 			];
 		case "lookDown":
 			return [
-				{
-					label: "Avg Look Down",
-					value: (scores.eyeLookDownLeft + scores.eyeLookDownRight) / 2,
-					threshold: THRESHOLDS.eyeLook,
-				},
-				{
-					label: "L Look Down",
-					value: scores.eyeLookDownLeft,
-					threshold: THRESHOLDS.eyeLook,
-				},
-				{
-					label: "R Look Down",
-					value: scores.eyeLookDownRight,
-					threshold: THRESHOLDS.eyeLook,
-				},
+				{ label: "Head Pitch", value: headPose.pitch, threshold: THRESHOLDS.headTilt },
 			];
 		case "winkLeft":
 			return [
@@ -230,19 +144,6 @@ function getRelevantMetrics(
 					label: "Mouth Pucker",
 					value: scores.mouthPucker,
 					threshold: THRESHOLDS.purseLips,
-				},
-			];
-		case "frown":
-			return [
-				{
-					label: "Avg Mouth Frown",
-					value: (scores.mouthFrownLeft + scores.mouthFrownRight) / 2,
-					threshold: THRESHOLDS.frown,
-				},
-				{
-					label: "Avg Brow Down",
-					value: (scores.browDownLeft + scores.browDownRight) / 2,
-					threshold: THRESHOLDS.frown,
 				},
 			];
 		default:
@@ -302,8 +203,8 @@ function ChallengeTestPage() {
 	const [isRunning, setIsRunning] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedChallenge, setSelectedChallenge] = useState<ChallengeType>("blink");
-	const [scores, setScores] = useState<BlendshapeData | null>(null);
-	const [headPose, setHeadPose] = useState<HeadPoseData>({ yaw: 0, pitch: 0 });
+	const [scores, setScores] = useState<BlendshapeScores | null>(null);
+	const [headPose, setHeadPose] = useState<HeadPose>({ yaw: 0, pitch: 0 });
 	const [challengeState, setChallengeState] = useState<ChallengeState>(
 		createInitialChallengeState(),
 	);
@@ -642,7 +543,7 @@ function ChallengeTestPage() {
 												: "bg-gray-800 text-gray-400 hover:bg-gray-700"
 										}`}
 									>
-										{CHALLENGE_LABELS[ch]}
+										{CHALLENGE_DEFINITIONS[ch].instruction}
 									</button>
 								))}
 							</div>
@@ -651,7 +552,7 @@ function ChallengeTestPage() {
 						{/* Relevant metrics for selected challenge */}
 						<div className="bg-gray-900 rounded-xl p-3 mb-4">
 							<h3 className="text-sm font-medium text-gray-400 mb-2">
-								Metrics for: {CHALLENGE_LABELS[selectedChallenge]}
+								Metrics for: {CHALLENGE_DEFINITIONS[selectedChallenge].instruction}
 							</h3>
 							{metrics.length > 0 ? (
 								metrics.map((m) => (
@@ -694,7 +595,7 @@ function ChallengeTestPage() {
 											className="flex justify-between text-xs py-1 border-b border-gray-800"
 										>
 											<span className="text-green-400">
-												{CHALLENGE_LABELS[entry.challenge]}
+												{CHALLENGE_DEFINITIONS[entry.challenge].instruction}
 											</span>
 											<span className="text-gray-500">{entry.time}</span>
 										</div>

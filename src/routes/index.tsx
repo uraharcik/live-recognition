@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import type { LivenessMetrics } from "@/features/liveness";
 import { verifyImages } from "@/shared/api";
 import { AnimatedLoader } from "../components/animated-loader";
 import { PhotoUploader } from "../components/photo-uploader";
@@ -17,14 +18,15 @@ export default function App() {
 	const [currentStep, setCurrentStep] = useState<Step>(1);
 	const [photo1, setPhoto1] = useState<string | null>(null);
 	const [photo2, setPhoto2] = useState<string | null>(null);
+	const [livenessMetrics, setLivenessMetrics] =
+		useState<LivenessMetrics | null>(null);
 	const [matchResult, setMatchResult] = useState<{
 		isMatch: boolean;
 		confidence: number;
 	} | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
-	// Real AI matching service
-	const analyzePhotos = async () => {
+	const analyzePhotos = async (metrics: LivenessMetrics) => {
 		if (!photo1 || !photo2) {
 			setError("Both photos are required");
 			return;
@@ -34,7 +36,7 @@ export default function App() {
 		setError(null);
 
 		try {
-			const result = await verifyImages(photo1, photo2);
+			const result = await verifyImages(photo1, photo2, metrics);
 			setMatchResult(result);
 			setCurrentStep(4);
 		} catch (err) {
@@ -52,8 +54,19 @@ export default function App() {
 		setCurrentStep(1);
 		setPhoto1(null);
 		setPhoto2(null);
+		setLivenessMetrics(null);
 		setMatchResult(null);
 		setError(null);
+	};
+
+	const handlePhoto2Select = (photo: string, metrics?: LivenessMetrics) => {
+		setPhoto2(photo);
+		if (metrics) setLivenessMetrics(metrics);
+	};
+
+	const handlePhoto2Remove = () => {
+		setPhoto2(null);
+		setLivenessMetrics(null);
 	};
 
 	const handleNextFromStep1 = () => {
@@ -67,9 +80,14 @@ export default function App() {
 	};
 
 	const handleNextFromStep2 = () => {
-		if (photo2) {
-			analyzePhotos();
-		}
+		if (!photo2) return;
+		const metrics: LivenessMetrics = livenessMetrics ?? {
+			isLive: false,
+			eyesOpenOk: false,
+			headRotationOk: false,
+			yawAngle: 0,
+		};
+		analyzePhotos(metrics);
 	};
 
 	return (
@@ -135,8 +153,8 @@ export default function App() {
 								<PhotoUploader
 									photoIndex={1}
 									photo={photo2}
-									onPhotoSelect={setPhoto2}
-									onPhotoRemove={() => setPhoto2(null)}
+									onPhotoSelect={handlePhoto2Select}
+									onPhotoRemove={handlePhoto2Remove}
 								/>
 
 								{error && (

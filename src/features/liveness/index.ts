@@ -4,6 +4,7 @@ export { useLivenessState } from "./model/use-liveness-state";
 export { DEFAULT_LIVENESS_CONFIG } from "./lib/constants";
 export type {
 	LivenessConfig,
+	LivenessMetrics,
 	LivenessState,
 	LivenessStatus,
 	Challenge,

@@ -1,2 +1,6 @@
 export { verifyImages } from './verification';
-export type { VerificationResponse, ApiError } from './types';
+export type {
+	ApiError,
+	CompareRequestMetrics,
+	VerificationResponse,
+} from './types';

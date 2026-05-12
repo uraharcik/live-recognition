@@ -2,12 +2,12 @@ import { SwitchCamera, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_LIVENESS_CONFIG } from "../lib/constants";
-import type { LivenessConfig } from "../model/types";
+import type { LivenessConfig, LivenessMetrics } from "../model/types";
 import { useLivenessState } from "../model/use-liveness-state";
 import { LivenessOverlay } from "./liveness-overlay";
 
 interface LivenessDetectorProps {
-	onSuccess: (capturedImage: string) => void;
+	onSuccess: (capturedImage: string, metrics: LivenessMetrics) => void;
 	onCancel: () => void;
 	config?: Partial<LivenessConfig>;
 }

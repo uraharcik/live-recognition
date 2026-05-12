@@ -1,36 +1,52 @@
 export interface VerificationRequest {
-  source_image: File | Blob;
-  target_image: File | Blob;
+	source_image: File | Blob;
+	target_image: File | Blob;
+}
+
+export interface CompareRequestMetrics {
+	isLive: boolean;
+	eyesOpenOk: boolean;
+	headRotationOk: boolean;
+	yawAngle: number;
 }
 
 export interface FaceBox {
-  probability: number;
-  x_min: number;
-  y_min: number;
-  x_max: number;
-  y_max: number;
+	probability: number;
+	x_min: number;
+	y_min: number;
+	x_max: number;
+	y_max: number;
 }
 
 export interface FaceMatch {
-  box: FaceBox;
-  similarity: number;
+	box: FaceBox;
+	similarity: number;
 }
 
 export interface BackendVerificationResponse {
-  result: Array<{
-    source_image_face: {
-      box: FaceBox;
-    };
-    face_matches: FaceMatch[];
-  }>;
+	result: Array<{
+		source_image_face: {
+			box: FaceBox;
+		};
+		face_matches: FaceMatch[];
+	}>;
+}
+
+export interface CompareApiResponse {
+	isMatch?: boolean;
+	IsMatch?: boolean;
+	confidence?: number;
+	Confidence?: number;
+	similarity?: number;
+	Similarity?: number;
 }
 
 export interface VerificationResponse {
-  isMatch: boolean;
-  confidence: number;
+	isMatch: boolean;
+	confidence: number;
 }
 
 export interface ApiError {
-  message: string;
-  status: number;
+	message: string;
+	status: number;
 }

@@ -5,17 +5,22 @@ import {
 	extractBlendshapeScores,
 	extractHeadPose,
 	generateChallenges,
+	type BlendshapeScores,
 	type ChallengeState,
+	type HeadPose,
 } from "../lib/challenge-detector";
 import { DEFAULT_LIVENESS_CONFIG } from "../lib/constants";
 import { loadFaceLandmarker } from "./face-api-loader";
-import type { Challenge, LivenessConfig, LivenessState } from "./types";
+import type { Challenge, LivenessConfig, LivenessMetrics, LivenessState } from "./types";
 
 interface UseLivenessStateOptions {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
-	onSuccess: (capturedImage: string) => void;
+	onSuccess: (capturedImage: string, metrics: LivenessMetrics) => void;
 	config?: Partial<LivenessConfig>;
 }
+
+const EYES_OPEN_MAX_BLINK = 0.4;
+const HEAD_NEUTRAL_MAX = 0.15;
 
 export function useLivenessState({
 	videoRef,
@@ -40,6 +45,8 @@ export function useLivenessState({
 	const timeoutRef = useRef<number | null>(null);
 	const isDetectingRef = useRef(false);
 	const lastTimestampRef = useRef<number>(0);
+	const latestScoresRef = useRef<BlendshapeScores | null>(null);
+	const latestHeadPoseRef = useRef<HeadPose | null>(null);
 
 	const captureImage = useCallback(() => {
 		const video = videoRef.current;
@@ -86,7 +93,24 @@ export function useLivenessState({
 			setTimeout(() => {
 				const image = captureImage();
 				if (image) {
-					onSuccess(image);
+					const scores = latestScoresRef.current;
+					const headPose = latestHeadPoseRef.current;
+					const yawAngle = headPose ? headPose.yaw : 0;
+					const eyesOpenOk = scores
+						? scores.eyeBlinkLeft < EYES_OPEN_MAX_BLINK &&
+							scores.eyeBlinkRight < EYES_OPEN_MAX_BLINK
+						: false;
+					const headRotationOk = headPose
+						? Math.abs(headPose.yaw) < HEAD_NEUTRAL_MAX &&
+							Math.abs(headPose.pitch) < HEAD_NEUTRAL_MAX
+						: false;
+					const metrics: LivenessMetrics = {
+						isLive: true,
+						eyesOpenOk,
+						headRotationOk,
+						yawAngle,
+					};
+					onSuccess(image, metrics);
 				}
 			}, 1000);
 		} else {
@@ -148,6 +172,9 @@ export function useLivenessState({
 			const scores = extractBlendshapeScores(blendshapes);
 			const landmarks = result.faceLandmarks[0];
 			const headPose = extractHeadPose(landmarks);
+
+			latestScoresRef.current = scores;
+			latestHeadPoseRef.current = headPose;
 
 			// Full 3D face mesh logging
 			console.log("Face Mesh - All 478 landmarks:", landmarks);

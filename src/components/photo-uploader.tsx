@@ -1,13 +1,13 @@
 import { Camera, Image, SwitchCamera, Upload, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { LivenessDetector } from "@/features/liveness";
+import { LivenessDetector, type LivenessMetrics } from "@/features/liveness";
 import { ImageWithFallback } from "./image-with-fallback";
 
 interface PhotoUploaderProps {
 	photoIndex: number;
 	photo: string | null;
-	onPhotoSelect: (photo: string) => void;
+	onPhotoSelect: (photo: string, metrics?: LivenessMetrics) => void;
 	onPhotoRemove: () => void;
 }
 
@@ -166,8 +166,11 @@ export function PhotoUploader({
 	// For photoIndex === 1 (face capture), use liveness detection
 	const isFaceCapture = photoIndex === 1;
 
-	const handleLivenessSuccess = (capturedImage: string) => {
-		onPhotoSelect(capturedImage);
+	const handleLivenessSuccess = (
+		capturedImage: string,
+		metrics: LivenessMetrics,
+	) => {
+		onPhotoSelect(capturedImage, metrics);
 		setIsCameraOpen(false);
 	};
 

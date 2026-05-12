@@ -19,8 +19,7 @@ export type ChallengeType =
 	| "lookDown"
 	| "winkLeft"
 	| "winkRight"
-	| "purseLips"
-	| "frown";
+	| "purseLips";
 
 export interface Challenge {
 	type: ChallengeType;
@@ -58,4 +57,11 @@ export interface LivenessState {
 	currentChallenge: Challenge | null;
 	completedChallenges: number;
 	totalChallenges: number;
+}
+
+export interface LivenessMetrics {
+	isLive: boolean;
+	eyesOpenOk: boolean;
+	headRotationOk: boolean;
+	yawAngle: number;
 }

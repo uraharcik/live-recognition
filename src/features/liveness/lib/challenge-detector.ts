@@ -1,6 +1,6 @@
 import type { Challenge, ChallengeType } from "../model/types";
 
-interface BlendshapeScores {
+export interface BlendshapeScores {
 	eyeBlinkLeft: number;
 	eyeBlinkRight: number;
 	mouthSmileLeft: number;
@@ -11,23 +11,15 @@ interface BlendshapeScores {
 	browOuterUpRight: number;
 	eyeSquintLeft: number;
 	eyeSquintRight: number;
-	eyeLookUpLeft: number;
-	eyeLookUpRight: number;
-	eyeLookDownLeft: number;
-	eyeLookDownRight: number;
 	mouthPucker: number;
-	mouthFrownLeft: number;
-	mouthFrownRight: number;
-	browDownLeft: number;
-	browDownRight: number;
 }
 
-interface HeadPose {
+export interface HeadPose {
 	yaw: number; // Left/right rotation (-1 to 1)
 	pitch: number; // Up/down rotation (-1 to 1)
 }
 
-const CHALLENGE_DEFINITIONS: Record<ChallengeType, { instruction: string }> = {
+export const CHALLENGE_DEFINITIONS: Record<ChallengeType, { instruction: string }> = {
 	blink: { instruction: "Blink your eyes" },
 	turnLeft: { instruction: "Turn your head left" },
 	turnRight: { instruction: "Turn your head right" },
@@ -35,27 +27,28 @@ const CHALLENGE_DEFINITIONS: Record<ChallengeType, { instruction: string }> = {
 	openMouth: { instruction: "Open your mouth" },
 	raiseEyebrows: { instruction: "Raise your eyebrows" },
 	squint: { instruction: "Squint your eyes" },
-	lookUp: { instruction: "Look up" },
-	lookDown: { instruction: "Look down" },
+	lookUp: { instruction: "Tilt your head up" },
+	lookDown: { instruction: "Tilt your head down" },
 	winkLeft: { instruction: "Wink your left eye" },
 	winkRight: { instruction: "Wink your right eye" },
 	purseLips: { instruction: "Purse your lips" },
-	frown: { instruction: "Frown" },
 };
 
-const THRESHOLDS = {
-	blink: 0.5,
-	smile: 0.4,
-	jawOpen: 0.3,
+export const THRESHOLDS = {
+	blink: 0.45,
+	smile: 0.35,
+	jawOpen: 0.25,
 	headTurn: 0.15,
-	browRaise: 0.35,
-	squint: 0.4,
-	eyeLook: 0.4,
-	wink: 0.4,
-	winkOpenEye: 0.35,
-	winkHoldMs: 200,
-	purseLips: 0.4,
-	frown: 0.3,
+	browRaise: 0.3,
+	squint: 0.3,
+	squintMaxBlink: 0.35,
+	headTilt: 0.15,
+	wink: 0.35,
+	winkOpenEye: 0.5,
+	winkAsymmetry: 0.15,
+	winkHoldMs: 150,
+	purseLips: 0.35,
+	holdMs: 150,
 };
 
 /**
@@ -63,9 +56,18 @@ const THRESHOLDS = {
  */
 export function generateChallenges(count: number): Challenge[] {
 	const allTypes: ChallengeType[] = [
-		"blink", "turnLeft", "turnRight", "smile", "openMouth",
-		"raiseEyebrows", "squint", "lookUp",
-		"lookDown", "winkLeft", "winkRight", "purseLips", "frown",
+		"blink",
+		"turnLeft",
+		"turnRight",
+		"smile",
+		"openMouth",
+		"raiseEyebrows",
+		"squint",
+		"lookUp",
+		"lookDown",
+		"winkLeft",
+		"winkRight",
+		"purseLips",
 	];
 	const challenges: Challenge[] = [];
 	const usedTypes = new Set<ChallengeType>();
@@ -90,20 +92,45 @@ export function generateChallenges(count: number): Challenge[] {
 /**
  * Extract head pose from face landmarks
  */
-export function extractHeadPose(landmarks: Array<{ x: number; y: number; z: number }>): HeadPose {
+export function extractHeadPose(
+	landmarks: Array<{ x: number; y: number; z: number }>,
+): HeadPose {
 	const noseTip = landmarks[1];
 	const leftEye = landmarks[33];
 	const rightEye = landmarks[263];
+	const forehead = landmarks[10];
+	const chin = landmarks[152];
 
 	const faceCenterX = (leftEye.x + rightEye.x) / 2;
+	const yaw = (noseTip.x - faceCenterX) * 3;
 
-	const yaw = (faceCenterX - noseTip.x) * 3;
-	const pitch = (noseTip.y - (leftEye.y + rightEye.y) / 2) * 2;
+	// Pitch from z-depth difference between forehead and chin
+	// Tilt up → forehead moves back (z+), chin forward (z-) → negative pitch
+	// Tilt down → forehead forward (z-), chin back (z+) → positive pitch
+	const pitch = (chin.z - forehead.z) * 8;
 
 	return {
 		yaw: Math.max(-1, Math.min(1, yaw)),
 		pitch: Math.max(-1, Math.min(1, pitch)),
 	};
+}
+
+function checkWithHold(
+	conditionMet: boolean,
+	state: ChallengeState,
+): { completed: boolean; newState: ChallengeState } {
+	const newState = { ...state };
+	if (conditionMet) {
+		if (newState.holdStartTime === null) {
+			newState.holdStartTime = Date.now();
+		} else if (Date.now() - newState.holdStartTime >= THRESHOLDS.holdMs) {
+			newState.holdStartTime = null;
+			return { completed: true, newState };
+		}
+	} else {
+		newState.holdStartTime = null;
+	}
+	return { completed: false, newState };
 }
 
 /**
@@ -113,23 +140,27 @@ export function checkChallengeCompletion(
 	challenge: ChallengeType,
 	blendshapes: BlendshapeScores,
 	headPose: HeadPose,
-	previousState: ChallengeState
+	previousState: ChallengeState,
 ): { completed: boolean; newState: ChallengeState } {
 	const newState = { ...previousState };
 
 	switch (challenge) {
 		case "blink": {
-			const avgBlink = (blendshapes.eyeBlinkLeft + blendshapes.eyeBlinkRight) / 2;
+			const avgBlink =
+				(blendshapes.eyeBlinkLeft + blendshapes.eyeBlinkRight) / 2;
 
 			if (avgBlink > THRESHOLDS.blink) {
 				if (!newState.eyesClosed) {
 					newState.eyesClosed = true;
 					newState.eyesClosedTime = Date.now();
 				}
-			} else if (newState.eyesClosed && avgBlink < 0.3) {
+			} else if (newState.eyesClosed && avgBlink < 0.25) {
 				const blinkDuration = Date.now() - (newState.eyesClosedTime ?? 0);
-				if (blinkDuration > 50 && blinkDuration < 500) {
-					return { completed: true, newState: { ...newState, eyesClosed: false } };
+				if (blinkDuration > 50 && blinkDuration < 600) {
+					return {
+						completed: true,
+						newState: { ...newState, eyesClosed: false },
+					};
 				}
 				newState.eyesClosed = false;
 			}
@@ -142,7 +173,10 @@ export function checkChallengeCompletion(
 					newState.turnedLeft = true;
 				}
 			} else if (newState.turnedLeft && headPose.yaw > -0.05) {
-				return { completed: true, newState: { ...newState, turnedLeft: false } };
+				return {
+					completed: true,
+					newState: { ...newState, turnedLeft: false },
+				};
 			}
 			return { completed: false, newState };
 		}
@@ -153,56 +187,68 @@ export function checkChallengeCompletion(
 					newState.turnedRight = true;
 				}
 			} else if (newState.turnedRight && headPose.yaw < 0.05) {
-				return { completed: true, newState: { ...newState, turnedRight: false } };
+				return {
+					completed: true,
+					newState: { ...newState, turnedRight: false },
+				};
 			}
 			return { completed: false, newState };
 		}
 
 		case "smile": {
-			const avgSmile = (blendshapes.mouthSmileLeft + blendshapes.mouthSmileRight) / 2;
-			if (avgSmile > THRESHOLDS.smile) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
+			const avgSmile =
+				(blendshapes.mouthSmileLeft + blendshapes.mouthSmileRight) / 2;
+			return checkWithHold(avgSmile > THRESHOLDS.smile, newState);
 		}
 
 		case "openMouth": {
-			if (blendshapes.jawOpen > THRESHOLDS.jawOpen) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
+			return checkWithHold(blendshapes.jawOpen > THRESHOLDS.jawOpen, newState);
 		}
 
 		case "raiseEyebrows": {
-			const avgBrow = (blendshapes.browOuterUpLeft + blendshapes.browOuterUpRight + blendshapes.browInnerUp) / 3;
-			if (avgBrow > THRESHOLDS.browRaise) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
+			const avgBrow =
+				(blendshapes.browOuterUpLeft +
+					blendshapes.browOuterUpRight +
+					blendshapes.browInnerUp) /
+				3;
+			return checkWithHold(avgBrow > THRESHOLDS.browRaise, newState);
 		}
 
 		case "squint": {
-			const avgSquint = (blendshapes.eyeSquintLeft + blendshapes.eyeSquintRight) / 2;
-			const avgBlink = (blendshapes.eyeBlinkLeft + blendshapes.eyeBlinkRight) / 2;
-			// Squint without fully closing eyes
-			if (avgSquint > THRESHOLDS.squint && avgBlink < THRESHOLDS.blink) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
+			const avgSquint =
+				(blendshapes.eyeSquintLeft + blendshapes.eyeSquintRight) / 2;
+			const avgBlink =
+				(blendshapes.eyeBlinkLeft + blendshapes.eyeBlinkRight) / 2;
+			return checkWithHold(
+				avgSquint > THRESHOLDS.squint && avgBlink < THRESHOLDS.squintMaxBlink,
+				newState,
+			);
 		}
 
 		case "lookUp": {
-			const avgLookUp = (blendshapes.eyeLookUpLeft + blendshapes.eyeLookUpRight) / 2;
-			if (avgLookUp > THRESHOLDS.eyeLook) {
-				return { completed: true, newState };
+			if (headPose.pitch < -THRESHOLDS.headTilt) {
+				if (!newState.tiltedUp) {
+					newState.tiltedUp = true;
+				}
+			} else if (newState.tiltedUp && headPose.pitch > -0.05) {
+				return {
+					completed: true,
+					newState: { ...newState, tiltedUp: false },
+				};
 			}
 			return { completed: false, newState };
 		}
 
 		case "lookDown": {
-			const avgLookDown = (blendshapes.eyeLookDownLeft + blendshapes.eyeLookDownRight) / 2;
-			if (avgLookDown > THRESHOLDS.eyeLook) {
-				return { completed: true, newState };
+			if (headPose.pitch > THRESHOLDS.headTilt) {
+				if (!newState.tiltedDown) {
+					newState.tiltedDown = true;
+				}
+			} else if (newState.tiltedDown && headPose.pitch < 0.05) {
+				return {
+					completed: true,
+					newState: { ...newState, tiltedDown: false },
+				};
 			}
 			return { completed: false, newState };
 		}
@@ -210,10 +256,9 @@ export function checkChallengeCompletion(
 		case "winkLeft": {
 			const leftClosed = blendshapes.eyeBlinkLeft > THRESHOLDS.wink;
 			const rightOpen = blendshapes.eyeBlinkRight < THRESHOLDS.winkOpenEye;
-			// Reject if both eyes are closing (natural blink)
-			const bothClosing = blendshapes.eyeBlinkLeft > THRESHOLDS.wink && blendshapes.eyeBlinkRight > THRESHOLDS.winkOpenEye;
+			const asymmetry = blendshapes.eyeBlinkLeft - blendshapes.eyeBlinkRight;
 
-			if (leftClosed && rightOpen && !bothClosing) {
+			if (leftClosed && rightOpen && asymmetry > THRESHOLDS.winkAsymmetry) {
 				if (newState.winkingSide !== "left") {
 					newState.winkingSide = "left";
 					newState.winkStartTime = Date.now();
@@ -235,10 +280,9 @@ export function checkChallengeCompletion(
 		case "winkRight": {
 			const rightClosed = blendshapes.eyeBlinkRight > THRESHOLDS.wink;
 			const leftOpen = blendshapes.eyeBlinkLeft < THRESHOLDS.winkOpenEye;
-			// Reject if both eyes are closing (natural blink)
-			const bothClosing = blendshapes.eyeBlinkRight > THRESHOLDS.wink && blendshapes.eyeBlinkLeft > THRESHOLDS.winkOpenEye;
+			const asymmetry = blendshapes.eyeBlinkRight - blendshapes.eyeBlinkLeft;
 
-			if (rightClosed && leftOpen && !bothClosing) {
+			if (rightClosed && leftOpen && asymmetry > THRESHOLDS.winkAsymmetry) {
 				if (newState.winkingSide !== "right") {
 					newState.winkingSide = "right";
 					newState.winkStartTime = Date.now();
@@ -258,20 +302,10 @@ export function checkChallengeCompletion(
 		}
 
 		case "purseLips": {
-			if (blendshapes.mouthPucker > THRESHOLDS.purseLips) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
-		}
-
-		case "frown": {
-			const avgFrown = (blendshapes.mouthFrownLeft + blendshapes.mouthFrownRight) / 2;
-			const avgBrowDown = (blendshapes.browDownLeft + blendshapes.browDownRight) / 2;
-			// Either mouth frown or brow frown
-			if (avgFrown > THRESHOLDS.frown || avgBrowDown > THRESHOLDS.frown) {
-				return { completed: true, newState };
-			}
-			return { completed: false, newState };
+			return checkWithHold(
+				blendshapes.mouthPucker > THRESHOLDS.purseLips,
+				newState,
+			);
 		}
 
 		default:
@@ -284,8 +318,11 @@ export interface ChallengeState {
 	eyesClosedTime: number | null;
 	turnedLeft: boolean;
 	turnedRight: boolean;
+	tiltedUp: boolean;
+	tiltedDown: boolean;
 	winkingSide: "left" | "right" | null;
 	winkStartTime: number | null;
+	holdStartTime: number | null;
 }
 
 export function createInitialChallengeState(): ChallengeState {
@@ -294,8 +331,11 @@ export function createInitialChallengeState(): ChallengeState {
 		eyesClosedTime: null,
 		turnedLeft: false,
 		turnedRight: false,
+		tiltedUp: false,
+		tiltedDown: false,
 		winkingSide: null,
 		winkStartTime: null,
+		holdStartTime: null,
 	};
 }
 
@@ -303,7 +343,7 @@ export function createInitialChallengeState(): ChallengeState {
  * Extract blendshape scores from MediaPipe result
  */
 export function extractBlendshapeScores(
-	categories: Array<{ categoryName: string; score: number }>
+	categories: Array<{ categoryName: string; score: number }>,
 ): BlendshapeScores {
 	const findScore = (name: string) =>
 		categories.find((c) => c.categoryName === name)?.score ?? 0;
@@ -319,14 +359,6 @@ export function extractBlendshapeScores(
 		browOuterUpRight: findScore("browOuterUpRight"),
 		eyeSquintLeft: findScore("eyeSquintLeft"),
 		eyeSquintRight: findScore("eyeSquintRight"),
-		eyeLookUpLeft: findScore("eyeLookUpLeft"),
-		eyeLookUpRight: findScore("eyeLookUpRight"),
-		eyeLookDownLeft: findScore("eyeLookDownLeft"),
-		eyeLookDownRight: findScore("eyeLookDownRight"),
 		mouthPucker: findScore("mouthPucker"),
-		mouthFrownLeft: findScore("mouthFrownLeft"),
-		mouthFrownRight: findScore("mouthFrownRight"),
-		browDownLeft: findScore("browDownLeft"),
-		browDownRight: findScore("browDownRight"),
 	};
 }
