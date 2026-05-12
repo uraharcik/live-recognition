@@ -40,7 +40,6 @@ export default function App() {
 			setMatchResult(result);
 			setCurrentStep(4);
 		} catch (err) {
-			console.error("Verification error:", err);
 			setError(
 				err instanceof Error
 					? err.message

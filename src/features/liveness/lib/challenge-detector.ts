@@ -102,7 +102,8 @@ export function extractHeadPose(
 	const chin = landmarks[152];
 
 	const faceCenterX = (leftEye.x + rightEye.x) / 2;
-	const yaw = (noseTip.x - faceCenterX) * 3;
+	// Negated so positive yaw = user's right turn (camera frame is unmirrored)
+	const yaw = (faceCenterX - noseTip.x) * 3;
 
 	// Pitch from z-depth difference between forehead and chin
 	// Tilt up → forehead moves back (z+), chin forward (z-) → negative pitch

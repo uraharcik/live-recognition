@@ -293,8 +293,7 @@ function ChallengeTestPage() {
 		setIsLoading(true);
 		try {
 			await loadFaceLandmarker();
-		} catch (err) {
-			console.error("Failed to load model:", err);
+		} catch {
 			setIsLoading(false);
 			return;
 		}
@@ -315,12 +314,12 @@ function ChallengeTestPage() {
 				});
 				if (mounted && videoRef.current) {
 					videoRef.current.srcObject = stream;
-					videoRef.current.play().catch(console.error);
+					videoRef.current.play().catch(() => {});
 				} else {
 					stream.getTracks().forEach((t) => t.stop());
 				}
-			} catch (err) {
-				console.error("Camera error:", err);
+			} catch {
+				// ignore
 			}
 		};
 		init();

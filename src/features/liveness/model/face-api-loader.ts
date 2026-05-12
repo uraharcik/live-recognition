@@ -36,10 +36,8 @@ export async function loadFaceLandmarker(): Promise<FaceLandmarker> {
 			});
 
 			faceLandmarker = landmarker;
-			console.log("MediaPipe Face Landmarker loaded successfully");
 			return landmarker;
 		} catch (error) {
-			console.error("Failed to load MediaPipe Face Landmarker:", error);
 			loadingPromise = null;
 			throw error;
 		}

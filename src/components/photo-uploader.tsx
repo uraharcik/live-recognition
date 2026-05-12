@@ -37,28 +37,18 @@ export function PhotoUploader({
 
 	const startCamera = async (mode: "user" | "environment") => {
 		try {
-			// First try with specified camera
-			let mediaStream: MediaStream;
 			try {
-				mediaStream = await navigator.mediaDevices.getUserMedia({
+				return await navigator.mediaDevices.getUserMedia({
 					video: { facingMode: { ideal: mode } },
 					audio: false,
 				});
-			} catch (err) {
-				// Fallback: try without facingMode constraint
-				console.log(
-					`${mode} camera not available, trying default camera:`,
-					err,
-				);
-				mediaStream = await navigator.mediaDevices.getUserMedia({
+			} catch {
+				return await navigator.mediaDevices.getUserMedia({
 					video: true,
 					audio: false,
 				});
 			}
-
-			return mediaStream;
 		} catch (error) {
-			console.error("Error accessing camera:", error);
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 			throw new Error(
@@ -147,9 +137,7 @@ export function PhotoUploader({
 	useEffect(() => {
 		if (stream && videoRef.current) {
 			videoRef.current.srcObject = stream;
-			videoRef.current.play().catch((error) => {
-				console.error("Error playing video:", error);
-			});
+			videoRef.current.play().catch(() => {});
 		}
 	}, [stream]);
 

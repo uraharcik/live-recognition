@@ -30,23 +30,15 @@ export function LivenessDetector({
 
 	const startCamera = async (mode: "user" | "environment") => {
 		try {
-			let mediaStream: MediaStream;
-			try {
-				mediaStream = await navigator.mediaDevices.getUserMedia({
-					video: { facingMode: { ideal: mode } },
-					audio: false,
-				});
-			} catch {
-				// Fallback to default camera
-				mediaStream = await navigator.mediaDevices.getUserMedia({
-					video: true,
-					audio: false,
-				});
-			}
-			return mediaStream;
-		} catch (error) {
-			console.error("Error accessing camera:", error);
-			throw error;
+			return await navigator.mediaDevices.getUserMedia({
+				video: { facingMode: { ideal: mode } },
+				audio: false,
+			});
+		} catch {
+			return await navigator.mediaDevices.getUserMedia({
+				video: true,
+				audio: false,
+			});
 		}
 	};
 
@@ -118,7 +110,7 @@ export function LivenessDetector({
 	useEffect(() => {
 		if (stream && videoRef.current) {
 			videoRef.current.srcObject = stream;
-			videoRef.current.play().catch(console.error);
+			videoRef.current.play().catch(() => {});
 		}
 	}, [stream]);
 

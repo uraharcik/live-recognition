@@ -176,21 +176,6 @@ export function useLivenessState({
 			latestScoresRef.current = scores;
 			latestHeadPoseRef.current = headPose;
 
-			// Full 3D face mesh logging
-			console.log("Face Mesh - All 478 landmarks:", landmarks);
-			console.log("Face Mesh - Facial transformation matrices:", result.facialTransformationMatrixes);
-			console.log("Face Mesh - Blendshapes:", result.faceBlendshapes?.[0]?.categories);
-
-			// Debug logging
-			console.log(
-				`Challenge: ${currentChallenge.type}`,
-				`| Blink: ${((scores.eyeBlinkLeft + scores.eyeBlinkRight) / 2).toFixed(2)}`,
-				`| Smile: ${((scores.mouthSmileLeft + scores.mouthSmileRight) / 2).toFixed(2)}`,
-				`| Jaw: ${scores.jawOpen.toFixed(2)}`,
-				`| Yaw: ${headPose.yaw.toFixed(2)}`
-			);
-
-			// Check if current challenge is completed
 			const { completed, newState } = checkChallengeCompletion(
 				currentChallenge.type,
 				scores,
@@ -201,11 +186,10 @@ export function useLivenessState({
 			challengeStateRef.current = newState;
 
 			if (completed) {
-				console.log(`Challenge completed: ${currentChallenge.type}`);
 				advanceToNextChallenge();
 			}
-		} catch (error) {
-			console.error("Detection error:", error);
+		} catch {
+			// ignore
 		}
 	}, [videoRef, advanceToNextChallenge]);
 
